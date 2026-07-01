@@ -1,0 +1,9 @@
+allowBuilds:
+  '@anthropic-ai/claude-code': true
+  '@google/genai': true
+  esbuild: true
+  protobufjs: true
+onlyBuiltDependencies:
+  - "@google/genai"
+  - esbuild
+  - protobufjs

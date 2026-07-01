@@ -1,0 +1,43 @@
+{
+  "name": "multi-ai-hub",
+  "version": "0.1.0",
+  "description": "Privacy-first local MCP hub for coordinating Claude, OpenAI, Gemini, Ollama, and optional OpenAI-compatible council seats.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "claude-code",
+    "multi-agent",
+    "ollama",
+    "gemini",
+    "openai",
+    "nvidia-nim"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "smoke": "tsx scripts/smoke-test.ts",
+    "smoke:ollama": "tsx scripts/smoke-ollama.ts",
+    "smoke:cloud-seats": "tsx scripts/smoke-cloud-seats.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/**/*.test.ts",
+    "secret:scan": "tsx scripts/secret-scan.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^2.1.183",
+    "@anthropic-ai/sdk": "^0.105.0",
+    "@google/genai": "^2.9.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.4.2",
+    "openai": "^6.44.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}
