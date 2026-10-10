@@ -2,6 +2,7 @@ import "dotenv/config";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { readHttpConfig } from "./http-config.js";
 
 function numberFromEnv(name: string, fallback: number): number {
   const value = Number(process.env[name] ?? fallback);
@@ -12,8 +13,7 @@ const projectRoot = path.resolve(process.env.MULTI_AI_ROOT ?? process.cwd());
 
 export const config = {
   projectRoot,
-  host: process.env.HOST ?? "127.0.0.1",
-  port: numberFromEnv("PORT", 8787),
+  ...readHttpConfig(process.env),
   maxDelegationDepth: numberFromEnv("MAX_DELEGATION_DEPTH", 3),
   maxToolRounds: numberFromEnv("MAX_TOOL_ROUNDS", 6),
   maxOutputTokens: numberFromEnv("MAX_OUTPUT_TOKENS", 4096),

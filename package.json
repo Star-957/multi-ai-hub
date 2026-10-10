@@ -16,6 +16,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
+    "build:demo": "node scripts/build-demo.mjs",
+    "preview:demo": "node scripts/preview-demo.mjs",
     "smoke": "tsx scripts/smoke-test.ts",
     "smoke:ollama": "tsx scripts/smoke-ollama.ts",
     "smoke:cloud-seats": "tsx scripts/smoke-cloud-seats.ts",
@@ -27,17 +29,17 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^2.1.183",
+    "@anthropic-ai/claude-code": "^2.1.296",
     "@anthropic-ai/sdk": "^0.105.0",
-    "@google/genai": "^2.9.0",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@google/genai": "^2.28.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "dotenv": "^17.4.2",
-    "openai": "^6.44.0",
-    "zod": "^4.4.3"
+    "openai": "^6.49.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/node": "^26.0.0",
-    "tsx": "^4.22.4",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   }
 }

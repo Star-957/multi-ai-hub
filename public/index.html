@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Multi-AI Hub · 協作工作台</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#message">跳到提問</a>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="./"><span class="mark" aria-hidden="true">M<span>↗</span></span><span>Multi-AI Hub<small>協作工作台</small></span></a>
+      <div class="top-actions"><span id="mode" class="badge">正在載入…</span><a href="https://github.com/Star-957/multi-ai-hub" rel="noreferrer">GitHub ↗</a></div>
+    </header>
+    <main>
+      <section class="intro">
+        <div><p class="eyebrow">一個任務，多個觀點</p><h1>選好模型，<br>開始一起想。</h1><p id="intro-text">載入工作台設定中。</p></div>
+        <aside class="mode-note"><span class="note-icon" aria-hidden="true">↳</span><div><strong id="mode-title">準備工作台</strong><p id="mode-description">請稍候。</p></div></aside>
+      </section>
+      <div class="workspace">
+        <aside class="sidebar" aria-label="模型與設定">
+          <div class="section-heading"><h2>選擇主模型</h2><button id="refresh" class="text-button" type="button">重新檢查</button></div>
+          <p id="provider-note" class="muted small">設定狀態不代表服務已連線。</p>
+          <div id="providers" class="providers" role="group" aria-label="主模型"></div>
+          <div id="connection" class="connection" role="status" aria-live="polite">正在讀取設定…</div>
+          <details class="setup" id="setup"><summary>如何使用自己的模型？</summary><ol><li>從 GitHub 下載並安裝專案。</li><li>將 <code>.env.example</code> 複製為 <code>.env</code>，只在自己的電腦填入設定。</li><li>執行 <code>pnpm start</code>，開啟終端顯示的本機網址。</li></ol><p>本機模型需要另行啟動 Ollama 並下載模型。雲端 API 可能產生費用。</p><a href="https://github.com/Star-957/multi-ai-hub#quick-start" rel="noreferrer">閱讀安裝說明 ↗</a></details>
+        </aside>
+        <section class="conversation" aria-label="提問工作區">
+          <div class="conversation-header"><div><h2>工作區</h2><span class="muted small">每次提問獨立處理</span></div><button id="clear" class="text-button" type="button">清除畫面</button></div>
+          <div id="messages" class="messages" role="log" aria-label="回覆紀錄" aria-live="polite">
+            <div id="empty" class="empty"><div class="empty-glyph" aria-hidden="true">↗</div><h3>由一個具體問題開始</h3><p>主模型可以整合其他模型的意見。<br>先試一個不含私人資料的任務。</p><div class="examples"><button type="button" data-prompt="為一個開源筆記工具構思三個功能，並說明取捨。">構思產品功能 <span>↗</span></button><button type="button" data-prompt="比較兩種待辦清單介面：按日期分組，或按專案分組。">比較兩個方案 <span>↗</span></button><button type="button" data-prompt="設計一份程式碼審查清單，重點是錯誤處理與可測試性。">規劃程式碼審查 <span>↗</span></button></div></div>
+          </div>
+          <p id="notice" class="notice" role="status" aria-live="polite"></p>
+          <form id="form">
+            <label for="message">你的任務</label>
+            <textarea id="message" rows="3" maxlength="12000" required placeholder="描述目標、限制，以及你想收到的結果…"></textarea>
+            <div class="composer-bottom"><span class="muted small"><span id="count">0</span> / 12,000 · Ctrl / ⌘ + Enter 送出</span><button id="send" class="primary" type="submit" disabled>開始協作 <span aria-hidden="true">↗</span></button></div>
+            <p id="privacy-note" class="muted small">對話只保留在此分頁；重新載入即清除。</p>
+          </form>
+        </section>
+      </div>
+    </main>
+    <footer><span>Multi-AI Hub · 開源模型協作工具</span><span>先理解資料去哪裏，再開始協作。</span></footer>
+  </div>
+  <noscript>這個工作台需要 JavaScript。請啟用後重新載入；安裝指引可在 GitHub README 閱讀。</noscript>
+</body>
+</html>

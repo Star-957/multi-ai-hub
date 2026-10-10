@@ -1,5 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 
 const root = path.resolve(process.argv[2] ?? ".");
 
@@ -56,8 +58,9 @@ const patterns = [
   },
 ];
 
-type Finding = { file: string; line: number; pattern: string; sample: string };
+type Finding = { file: string; line: number; pattern: string };
 const findings: Finding[] = [];
+const scanned = new Set<string>();
 
 async function walk(dir: string) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -78,6 +81,8 @@ async function walk(dir: string) {
 }
 
 async function scanFile(file: string) {
+  if (scanned.has(file)) return;
+  scanned.add(file);
   const rel = path.relative(root, file);
   if (rel.replace(/\\/g, "/") === "scripts/secret-scan.ts") return;
   const text = await readFile(file, "utf8").catch(() => "");
@@ -96,7 +101,6 @@ async function scanFile(file: string) {
           file: rel,
           line: i + 1,
           pattern: pattern.name,
-          sample: lines[i].slice(0, 160),
         });
       }
     }
@@ -105,10 +109,23 @@ async function scanFile(file: string) {
 
 await walk(root);
 
+// Ignore rules do not protect files already tracked by Git. Inspect those as well,
+// including paths excluded from the ordinary working-directory scan.
+if (existsSync(path.join(root, ".git"))) {
+  const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
+  for (const rel of tracked) {
+    if (rel !== ".env.example" && /(^|\/)(\.env(?:\..*)?|\.claude|\.codex|memory|logs|sessions|transcripts|private|data)(\/|$)/i.test(rel)) {
+      findings.push({ file: rel, line: 0, pattern: "private tracked path" });
+    }
+    const file = path.join(root, rel);
+    if (existsSync(file) && !binaryExts.has(path.extname(file).toLowerCase())) await scanFile(file);
+  }
+}
+
 if (findings.length > 0) {
   console.error(`Secret/private scan found ${findings.length} issue(s):`);
   for (const item of findings.slice(0, 80)) {
-    console.error(`${item.file}:${item.line} [${item.pattern}] ${item.sample}`);
+    console.error(`${item.file}:${item.line} [${item.pattern}] (content redacted)`);
   }
   if (findings.length > 80) console.error(`...and ${findings.length - 80} more`);
   process.exit(1);
