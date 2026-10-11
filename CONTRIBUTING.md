@@ -19,8 +19,10 @@ Provider keys are optional for most tests. Do not commit `.env`.
 - Add or update tests for behavior changes.
 - Run `pnpm typecheck`.
 - Run `pnpm test`.
-- Run `pnpm secret:scan`.
+- Run `pnpm build:demo` and verify the demo remains disconnected from APIs.
+- Run `pnpm secret:scan` after staging. It checks working files and the actual index blobs; clean working copies do not hide staged content.
 - Do not include personal memory, transcripts, generated outputs, provider credentials, or private project data.
+- Review `git diff --cached` and `git ls-files` before pushing. Never publish a local runtime's history; base public changes on the public repository.
 
 ## Provider Changes
 

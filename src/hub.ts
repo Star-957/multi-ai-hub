@@ -8,6 +8,8 @@ import { OllamaAdapter } from "./providers/ollama.js";
 import { readPrompt } from "./tools.js";
 import { configuredSeats, SEATS, seatModel, type SeatId } from "./seats.js";
 import { PROVIDERS } from "./types.js";
+import { isSensitive } from "./sensitivity.js";
+import { safeProviderError } from "./provider-error.js";
 import type {
   AgentResult,
   Provider,
@@ -91,6 +93,9 @@ export class MultiAIHub {
   }
 
   private async dispatch(provider: Provider, prompt: string, parent: RunContext): Promise<AgentResult> {
+    if (provider !== "ollama" && isSensitive(prompt)) {
+      throw new Error("Sensitive content requires a local model.");
+    }
     const adapter = this.adapters.get(provider);
     if (!adapter) throw new Error(`${provider} is not configured`);
 
@@ -101,7 +106,7 @@ export class MultiAIHub {
       this.trace(context, provider, "complete", `Completed ${provider}`, context.depth);
       return { ...result, trace: context.trace };
     } catch (error) {
-      this.trace(context, provider, "error", errorMessage(error), context.depth);
+      this.trace(context, provider, "error", "Provider request failed", context.depth);
       throw error;
     }
   }
@@ -114,6 +119,7 @@ export class MultiAIHub {
     try {
       const prompt = readPrompt(request);
       if (request.name === "generate_image") {
+        if (isSensitive(prompt)) throw new Error("Sensitive content cannot use cloud image generation.");
         this.trace(context, current, "tool", "Generating image with OpenAI", context.depth);
         const artifact = await this.imageGenerator.generate(prompt);
         return { ok: true, content: JSON.stringify(artifact), artifacts: [artifact] };
@@ -142,7 +148,7 @@ export class MultiAIHub {
       }
       throw new Error(`Unknown tool: ${request.name}`);
     } catch (error) {
-      return { ok: false, content: classifyProviderError(error) };
+      return { ok: false, content: safeProviderError(error) };
     }
   }
 
@@ -155,24 +161,4 @@ export class MultiAIHub {
   ) {
     context.trace.push({ at: new Date().toISOString(), provider, event, detail, depth });
   }
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-// Classify a provider failure so the commander gets a machine-readable redirect
-// instead of a raw SDK error string. Pure message inspection — never reads memory,
-  // never auto-retries, never spawns.
-function classifyProviderError(error: unknown): string {
-  const message = errorMessage(error);
-  if (/(^|\D)(429|401)(\D|$)|quota|rate.?limit|insufficient|billing|invalid_api_key|authentication|unauthorized/i.test(message)) {
-    return (
-      `${message}\n\n` +
-      "[provider unavailable — quota/auth] 呢個 provider 暫時用唔到(配額 / billing / 認證)。" +
-      "唔好重試同一個;改用 ask_ollama(本機免費、live)或 ask_gemini 完成同一任務。" +
-      "(注:ChatGPT 訂閱唔包 OpenAI API credit。)"
-    );
-  }
-  return message;
 }

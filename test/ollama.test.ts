@@ -1,14 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { OllamaAdapter } from "../src/providers/ollama.js";
+import { readOllamaEndpoint } from "../src/local-endpoint.js";
 
 const context = { depth: 1, maxDepth: 3, path: [], trace: [] };
+
+test("local Ollama configuration rejects remote and credential-bearing destinations", () => {
+  assert.equal(readOllamaEndpoint(), "http://127.0.0.1:11434");
+  assert.equal(readOllamaEndpoint("http://localhost:11434/"), "http://127.0.0.1:11434");
+  assert.equal(readOllamaEndpoint("http://[::1]:11434"), "http://[::1]:11434");
+  assert.equal(readOllamaEndpoint(""), "");
+  for (const value of ["https://outside.invalid", "http://192.168.1.5:11434", "http://localhost.outside.invalid", "http://name:synthetic@127.0.0.1", "http://127.0.0.1/proxy", "http://127.0.0.1?route=cloud", "file:///tmp/model"]) {
+    assert.throws(() => readOllamaEndpoint(value), /loopback HTTP/);
+  }
+});
 
 test("OllamaAdapter retries without the think field when a model rejects thinking", async () => {
   const originalFetch = globalThis.fetch;
   const bodies: Array<Record<string, unknown>> = [];
 
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    assert.equal(init?.redirect, "error");
     const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
     bodies.push(body);
 

@@ -19,4 +19,6 @@ backups-src/
 gh-auth.*.txt
 ._*
 dist/
+playwright-report/
+test-results/
 .overnight-*

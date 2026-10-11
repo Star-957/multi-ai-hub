@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { MultiAIHub } from "../src/hub.js";
 
+test("direct hub calls reject sensitive content before any cloud provider runs", async () => {
+  const hub = new MultiAIHub();
+  for (const provider of ["openai", "claude", "gemini"] as const) {
+    await assert.rejects(hub.chat(provider, "my passport details"), /Sensitive content requires a local model/);
+  }
+});
+
 test("status exposes optional council seat metadata without secrets", () => {
   const status = new MultiAIHub().status();
   const nvidia = status.councilSeats.nvidia;

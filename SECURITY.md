@@ -14,6 +14,12 @@ If GitHub private vulnerability reporting is enabled for this repository, use th
 
 This project is designed as a local single-user MCP hub. It is not safe to expose directly to the public internet without adding authentication, authorization, HTTPS, rate limits, audit logs, and spend controls.
 
+The local HTTP listener accepts only loopback addresses. Host, Origin, Fetch Metadata and a required JSON/custom-header chat request guard against cross-site use. No CORS access is granted. These checks do not authenticate local software; a malicious process already running on the computer remains outside this boundary. Do not put the listener behind a public proxy or tunnel.
+
+Public hosting is supported only for the static demo built with `pnpm build:demo`. Its four-file allowlist includes no backend, credentials, generated data or transcripts, and its CSP disables network API connections. See [deployment instructions](docs/deployment.md).
+
+The browser shows configuration status rather than verified provider health. Cloud providers can receive and retain explicitly submitted non-sensitive prompts; the sensitivity classifier is conservative but cannot recognize every secret or private detail. Local model endpoints and credentials should be configured only for services you trust.
+
 Never commit `.env`, API keys, OAuth tokens, cookies, chat transcripts, private memory files, or generated data. Run:
 
 ```powershell
@@ -21,3 +27,7 @@ pnpm secret:scan
 ```
 
 before publishing or sharing changes.
+
+The scan checks both working files and the actual Git index blobs, including staged files whose working copies were cleaned or deleted. Unreadable index objects, conflicts and tracked links fail closed. Diagnostics redact matched contents. This heuristic is not a complete privacy audit: review the exact outbound commits, metadata, binary assets and integration/deployment settings separately before a push.
+
+Image generation requires explicit opt-in at execution time and uses the same sensitive-content guard for direct MCP and delegated calls. Provider failures returned through HTTP, MCP and council results use fixed messages rather than raw SDK diagnostics.

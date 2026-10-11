@@ -1,7 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import OpenAI from "openai";
-import { config } from "./config.js";
+import { config, configuredProviders } from "./config.js";
+import { isSensitive } from "./sensitivity.js";
 import type { Artifact } from "./types.js";
 
 export class ImageGenerator {
@@ -15,11 +16,15 @@ export class ImageGenerator {
   }
 
   get available(): boolean {
-    return Boolean(this.client);
+    return Boolean(this.client) && configuredProviders().imageGeneration;
   }
 
   async generate(prompt: string): Promise<Artifact> {
-    if (!this.client) throw new Error("OPENAI_API_KEY is not configured");
+    // Enforce at execution, including direct MCP calls and unadvertised model tools.
+    if (isSensitive(prompt)) throw new Error("Sensitive content cannot use cloud image generation.");
+    if (!this.client || !this.available) {
+      throw new Error("Image generation is disabled. Configure a provider and opt in explicitly.");
+    }
 
     const response = await this.client.images.generate({
       model: config.openai.imageModel,
