@@ -74,6 +74,7 @@ export class OllamaAdapter implements ProviderAdapter {
     try {
       const response = await fetch(`${endpoint}/api/chat`, {
         method: "POST",
+        redirect: "error", // A local endpoint may not redirect a private prompt elsewhere.
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         signal: controller.signal,

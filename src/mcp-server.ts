@@ -9,6 +9,7 @@ import { ImageGenerator } from "./image-generator.js";
 import { runCouncil, runSeatPlain } from "./council.js";
 import { SEATS, seatConfigured, type SeatId } from "./seats.js";
 import { isSensitive } from "./sensitivity.js";
+import { safeProviderError } from "./provider-error.js";
 import type { AgentResult, Artifact } from "./types.js";
 
 const hub = new MultiAIHub();
@@ -71,7 +72,7 @@ async function seatTool(seat: SeatId, prompt: string) {
     const text = await runSeatPlain(hub, seat, prompt);
     return { content: [{ type: "text" as const, text }], structuredContent: { seat, text } };
   } catch (error) {
-    return toolError(errorMessage(error));
+    return toolError(safeProviderError(error));
   }
 }
 
@@ -214,7 +215,7 @@ server.registerTool(
       const result = await runCouncil(hub, { prompt, mode, sensitivity, maxSeats });
       return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }], structuredContent: result };
     } catch (error) {
-      return toolError(errorMessage(error));
+      return toolError(safeProviderError(error));
     }
   },
 );
@@ -246,7 +247,7 @@ if (configuredProviders().imageGeneration) {
           structuredContent: artifact,
         };
       } catch (error) {
-        return toolError(errorMessage(error));
+        return toolError(safeProviderError(error));
       }
     },
   );
@@ -293,7 +294,7 @@ async function runProvider(provider: "openai" | "gemini" | "ollama", prompt: str
       },
     };
   } catch (error) {
-    return toolError(errorMessage(error));
+    return toolError(safeProviderError(error));
   }
 }
 
@@ -317,10 +318,6 @@ async function artifactContent(artifact: Artifact) {
 
 function toolError(message: string) {
   return { isError: true as const, content: [{ type: "text" as const, text: message }] };
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 const transport = new StdioServerTransport();

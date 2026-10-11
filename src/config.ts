@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { readHttpConfig } from "./http-config.js";
+import { readOllamaEndpoint } from "./local-endpoint.js";
 
 function numberFromEnv(name: string, fallback: number): number {
   const value = Number(process.env[name] ?? fallback);
@@ -51,7 +52,7 @@ export const config = {
     model: process.env.GEMINI_MODEL ?? "gemini-3.5-flash",
   },
   ollama: {
-    endpoint: process.env.OLLAMA_URL ?? "http://127.0.0.1:11434",
+    endpoint: readOllamaEndpoint(process.env.OLLAMA_URL),
     model: process.env.OLLAMA_MODEL ?? "qwen3:30b", // ask_ollama / ask_qwen seat
     // ask_llama_fast seat. Default is qwen3:8b; override with OLLAMA_FAST_MODEL if you prefer
     // a smaller model such as llama3.2.

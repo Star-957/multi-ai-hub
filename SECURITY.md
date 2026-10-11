@@ -27,3 +27,7 @@ pnpm secret:scan
 ```
 
 before publishing or sharing changes.
+
+The scan checks both working files and the actual Git index blobs, including staged files whose working copies were cleaned or deleted. Unreadable index objects, conflicts and tracked links fail closed. Diagnostics redact matched contents. This heuristic is not a complete privacy audit: review the exact outbound commits, metadata, binary assets and integration/deployment settings separately before a push.
+
+Image generation requires explicit opt-in at execution time and uses the same sensitive-content guard for direct MCP and delegated calls. Provider failures returned through HTTP, MCP and council results use fixed messages rather than raw SDK diagnostics.

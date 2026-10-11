@@ -72,6 +72,7 @@ test("bad content, unavailable providers and sensitive cloud requests fail close
   assert.equal((await call(port, "/api/chat", prompt, { "Content-Type": "text/plain" })).status, 415);
   for (const body of ["{", "[]", "null", JSON.stringify({ provider: "bad", message: "test" }), JSON.stringify({ provider: "ollama", message: " " })]) assert.equal((await call(port, "/api/chat", body)).status, 400);
   assert.equal((await call(port, "/api/chat", JSON.stringify({ provider: "ollama", message: "a".repeat(12001) }))).status, 413);
+  assert.equal((await call(port, "/api/chat", JSON.stringify({ provider: "ollama", message: "a".repeat(70000) }))).status, 413);
   assert.equal((await call(port, "/api/chat", JSON.stringify({ provider: "claude", message: "Explain sorting" }))).status, 409);
   assert.equal((await call(port, "/api/chat", JSON.stringify({ provider: "openai", message: "my passport details" }))).status, 403);
   assert.equal(calls.length, 0);

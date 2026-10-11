@@ -12,6 +12,7 @@ import {
   type Sensitivity,
 } from "./seats.js";
 import { isSensitive } from "./sensitivity.js";
+import { safeProviderError } from "./provider-error.js";
 import type { RunContext } from "./types.js";
 // Type-only import avoids any runtime import cycle (hub.ts → council.ts → hub.ts).
 import type { MultiAIHub } from "./hub.js";
@@ -64,7 +65,7 @@ const SEAT_OUTPUT_INSTRUCTION =
   '{"verdict":"PASS|REVISE|REJECT|ESCALATE","top_objection":"...","new_information":"...","disagreement_with_previous":"...","hidden_cost":"...","risk":"LOW|MEDIUM|HIGH","confidence":0.0}. ' +
   "new_information MUST be non-empty and must NOT repeat earlier reviewers. " +
   "If you genuinely have no material disagreement, set disagreement_with_previous to 'no material disagreement' and say why. " +
-  "For legal/tax/immigration/admissions/finance/medical/current-platform-rule claims: multi-model agreement is not proof — set risk to MEDIUM or HIGH and note that a primary source must still be checked.";
+  "For high-stakes claims or changing platform rules: multi-model agreement is not proof; set risk to MEDIUM or HIGH and note that a primary source must still be checked.";
 
 function priorSummary(prior: SeatReview[], currentLocality: SeatLocality): string {
   let valid = prior.filter((p) => p.ok && p.parsed);
@@ -267,7 +268,7 @@ function failedReview(seat: SeatId, error: unknown): SeatReview {
     risk: "UNKNOWN",
     confidence: 0,
     novelty: "low",
-    error: error instanceof Error ? error.message : String(error),
+    error: safeProviderError(error),
   };
 }
 

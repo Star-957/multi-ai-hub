@@ -80,7 +80,7 @@ pnpm start
 
 Open the URL printed by the server (default `http://127.0.0.1:8787`) **on that same computer**. You should see the console, not a 404. Keep the terminal running. Each person using the real console installs their own copy and supplies their own provider access.
 
-For local inference, install/start Ollama separately and download the model named in `.env`. The console's **configured** label indicates settings are present; it is not a live connectivity or quota check. For Claude CLI, use the CLI's existing login. API providers need their own credentials and billing arrangements. Example model IDs may need updating to models available to your account.
+For local inference, install/start Ollama separately and download the model named in `.env`. `OLLAMA_URL` accepts only a loopback HTTP(S) origin; remote endpoints and redirects are refused so seats labelled local stay on-machine. An empty value disables local seats. The console's **configured** label indicates settings are present; it is not a live connectivity or quota check. For Claude CLI, use the CLI's existing login. API providers need their own credentials and billing arrangements. Example model IDs may need updating to models available to your account.
 
 `HOST` accepts only `127.0.0.1`, `localhost`, or `::1`; `PORT` must be an integer from 1 to 65535. Other bind addresses fail at startup. If startup reports the port is in use, stop the other instance or choose another local port.
 

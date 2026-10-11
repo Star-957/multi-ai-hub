@@ -9,6 +9,7 @@ import { readPrompt } from "./tools.js";
 import { configuredSeats, SEATS, seatModel, type SeatId } from "./seats.js";
 import { PROVIDERS } from "./types.js";
 import { isSensitive } from "./sensitivity.js";
+import { safeProviderError } from "./provider-error.js";
 import type {
   AgentResult,
   Provider,
@@ -147,7 +148,7 @@ export class MultiAIHub {
       }
       throw new Error(`Unknown tool: ${request.name}`);
     } catch (error) {
-      return { ok: false, content: classifyProviderError(error) };
+      return { ok: false, content: safeProviderError(error) };
     }
   }
 
@@ -160,22 +161,4 @@ export class MultiAIHub {
   ) {
     context.trace.push({ at: new Date().toISOString(), provider, event, detail, depth });
   }
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-// Classify a provider failure so the commander gets a machine-readable redirect
-// instead of a raw SDK error string. Pure message inspection — never reads memory,
-  // never auto-retries, never spawns.
-function classifyProviderError(error: unknown): string {
-  const message = errorMessage(error);
-  if (/(^|\D)(429|401)(\D|$)|quota|rate.?limit|insufficient|billing|invalid_api_key|authentication|unauthorized/i.test(message)) {
-    return (
-      "Provider unavailable (authentication or quota). Check provider configuration; " +
-      "do not retry automatically or change the data's privacy boundary."
-    );
-  }
-  return "Provider request failed. Check configuration and service availability.";
 }
