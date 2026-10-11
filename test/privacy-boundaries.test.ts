@@ -12,6 +12,34 @@ process.env = {
   MULTI_AI_ROOT: process.cwd(), CLAUDE_TRANSPORT: "api", HOST: "127.0.0.1", PORT: "8787",
   OPENAI_API_KEY: "synthetic-only", GEMINI_API_KEY: "synthetic-only", OPENAI_IMAGE_ENABLED: "true",
 };
+
+// SDK clients capture fetch in their constructors, including the MCP singleton.
+// Install one dispatcher before importing any clients; it never forwards to native fetch.
+const originalFetch = globalThis.fetch;
+let fetchFixture: typeof fetch | undefined;
+let fetchCalls = 0;
+let unexpectedFetchCalls = 0;
+const fetchRequests: Parameters<typeof fetch>[] = [];
+globalThis.fetch = async (...args) => {
+  fetchCalls++;
+  fetchRequests.push(args);
+  if (!fetchFixture) {
+    unexpectedFetchCalls++;
+    throw new Error("Unexpected network request");
+  }
+  return fetchFixture(...args);
+};
+test.beforeEach(() => {
+  fetchFixture = undefined;
+  fetchCalls = 0;
+  unexpectedFetchCalls = 0;
+  fetchRequests.length = 0;
+});
+test.afterEach(() => {
+  assert.equal(unexpectedFetchCalls, 0, "all provider requests must have an explicit fixture");
+});
+test.after(() => { globalThis.fetch = originalFetch; });
+
 const { MultiAIHub } = await import("../src/hub.js");
 const { runCouncil } = await import("../src/council.js");
 const { GeminiAdapter } = await import("../src/providers/gemini.js");
@@ -46,8 +74,6 @@ test("benign council reaches Gemini while sensitive direct and council requests 
     calls++;
     return { provider: "gemini", text: JSON.stringify({ verdict: "PASS", new_information: "Synthetic independent point about complexity", risk: "LOW" }), artifacts: [], trace: context.trace };
   };
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => { throw new Error("Unexpected network request"); };
   try {
     const hub = new MultiAIHub();
     const council = await runCouncil(hub, { prompt: "Compare sorting algorithms", mode: "quick", maxSeats: 1 });
@@ -55,17 +81,20 @@ test("benign council reaches Gemini while sensitive direct and council requests 
     assert.equal(council.reviews[0]?.ok, true);
     assert.equal(council.reviews.length, 1);
     assert.equal(calls, 1);
+    assert.equal(fetchCalls, 0);
     await assert.rejects(hub.chat("gemini", "my passport details"), /Sensitive content/);
+    fetchFixture = async () => new Response(JSON.stringify({ message: { content: JSON.stringify({
+      verdict: "PASS", new_information: "Synthetic local review stays on the local route", risk: "LOW",
+    }) } }));
     const privateCouncil = await runCouncil(hub, { prompt: "my passport details", mode: "quick", maxSeats: 1 });
     assert.equal(privateCouncil.cloud_used, false);
+    assert.equal(privateCouncil.reviews[0]?.ok, true);
     assert.equal(calls, 1);
-  } finally { GeminiAdapter.prototype.run = originalRun; globalThis.fetch = originalFetch; }
+    assert.deepEqual(fetchRequests.map(([input]) => String(input)), ["http://127.0.0.1:11434/api/chat"]);
+  } finally { GeminiAdapter.prototype.run = originalRun; }
 });
 
 test("MCP and direct cloud images reject sensitive content, and execution requires opt-in", async () => {
-  const originalFetch = globalThis.fetch;
-  let calls = 0;
-  globalThis.fetch = async () => { calls++; throw new Error("Unexpected network request"); };
   try {
     const generator = new ImageGenerator();
     await assert.rejects(generator.generate("my passport details"), /Sensitive content/);
@@ -74,16 +103,18 @@ test("MCP and direct cloud images reject sensitive content, and execution requir
     process.env.OPENAI_IMAGE_ENABLED = "false";
     assert.equal(generator.available, false);
     await assert.rejects(generator.generate("Draw a tree"), /Image generation is disabled/);
-    assert.equal(calls, 0);
-  } finally { process.env.OPENAI_IMAGE_ENABLED = "true"; globalThis.fetch = originalFetch; }
+    assert.equal(fetchCalls, 0);
+  } finally { process.env.OPENAI_IMAGE_ENABLED = "true"; }
 });
 
 test("MCP provider, image and council errors redact raw provider diagnostics", async () => {
-  const originalFetch = globalThis.fetch;
   const originalChat = MultiAIHub.prototype.chat;
-  globalThis.fetch = async () => new Response(JSON.stringify({ error: { message: sentinel } }), {
-    status: 400, headers: { "content-type": "application/json" },
-  });
+  fetchFixture = async (input) => {
+    const error = String(input).startsWith("https://api.openai.com/") ? { message: sentinel } : sentinel;
+    return new Response(JSON.stringify({ error }), {
+      status: 400, headers: { "content-type": "application/json" },
+    });
+  };
   MultiAIHub.prototype.chat = async function() { throw new Error(sentinel); };
   try {
     for (const [name, args] of [
@@ -96,5 +127,12 @@ test("MCP provider, image and council errors redact raw provider diagnostics", a
       assert.ok(!result.includes(sentinel), name);
       assert.match(result, /Provider request failed/, name);
     }
-  } finally { MultiAIHub.prototype.chat = originalChat; globalThis.fetch = originalFetch; }
+    assert.deepEqual(fetchRequests.map(([input]) => String(input)), [
+      "http://127.0.0.1:11434/api/chat",
+      "https://api.openai.com/v1/images/generations",
+      "http://127.0.0.1:11434/api/chat",
+    ], "the MCP image singleton and local seats must use the intercepted transport");
+    assert.ok(fetchRequests.every(([, init]) => init?.method === "POST"));
+    assert.equal(JSON.parse(String(fetchRequests[1]?.[1]?.body)).prompt, "Draw a tree");
+  } finally { MultiAIHub.prototype.chat = originalChat; }
 });
